@@ -19,6 +19,7 @@ parse_ssh_config() {
   local selected_group=""
 
   # Allow users to select a group or return to group selection
+  echo "Select a group of connections (number):"
   while true; do
     if [ -z "$selected_group" ]; then
       select group_name in "${group_names[@]}" "Exit"; do
@@ -55,13 +56,14 @@ select_host() {
 
   # Prompt the user to select a host or return to group selection
   while true; do
-    read -p "Select a host (number) or '-' to return to groups: " input
+    read -p "Select a host (number) or type '-' to return to groups: " input
 
     if [[ "$input" == "-" || "$input" == "leftarrow" ]]; then
       return  # Return to group selection
     elif [[ "$input" =~ ^[0-9]+$ ]] && ((input >= 1 && input <= ${#host_array[@]})); then
       selected_host="${host_array[$input - 1]}"
-      echo "You selected host: $selected_host"
+      echo "You selected host: $selected_host - connecting..."
+      ssh "$selected_host"
       return
     else
       echo "Invalid selection."
