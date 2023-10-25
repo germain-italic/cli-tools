@@ -4,7 +4,7 @@
 
 ## s • Quickly list your .ssh/config connections by group
 
-Type `s` instead of `ssh` to select and connect to your SSH hosts.
+Type `s` instead of `ssh` to group, select and connect to your SSH hosts from `~/.ssh/config`.
 
 Details for the `s` command in [s/README.md](s/README.md).
 

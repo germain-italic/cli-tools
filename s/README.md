@@ -2,6 +2,14 @@
 
 > Quickly list your .ssh/config connections by group
 
+# Context
+
+If you're not using a ssh connection manager, you have to type `ssh my.ssh.server.host` every time, which is a real pain.
+
+You can save your favorite connections in the `~/.ssh/config` file and then simply type `ssh myhost`, which is much faster.
+
+However, if you have a lot of shortcuts in the config file, you can get lost. The `s` script lets you group, list and select hosts for easier connection.
+
 # Usage
 
 Simply type `s` instead of `ssh`.
