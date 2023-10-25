@@ -76,4 +76,4 @@ select_host() {
 config_file="$HOME/.ssh/config"
 
 # Call the function to parse the SSH config file and display groups
-parse_ssh_config "$config_file"
+alias s='parse_ssh_config "$config_file"'
