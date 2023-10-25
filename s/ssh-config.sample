@@ -1,3 +1,7 @@
+Host test_host_outside_group
+
+Host test2_orphan_host
+
 # Group Group 1 Name
 
 Host efriendly_hostname1

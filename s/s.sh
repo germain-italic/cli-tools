@@ -3,16 +3,21 @@
 # Function to parse the SSH config file and extract groups and hosts
 parse_ssh_config() {
   local config_file="$1"
-  local group_names=()
+  local group_names=("Connections without group") # Initialize default group for orphan hosts
   declare -A hosts
 
   # Read the SSH config file and populate group_names and hosts arrays
   while read -r line; do
+    # echo "Line: $line"
     if [[ $line =~ ^#\ Group\ (.+) ]]; then
       current_group="${BASH_REMATCH[1]}"
       group_names+=("$current_group")
     elif [[ $line =~ ^Host\ ([^*].*) ]]; then
-      hosts["$current_group"]+=" ${BASH_REMATCH[1]}"
+      if [ -n "$current_group" ]; then
+        hosts["$current_group"]+=" ${BASH_REMATCH[1]}"
+      else
+        hosts["Connections without group"]+=" ${BASH_REMATCH[1]}"
+      fi
     fi
   done < "$config_file"
 
@@ -47,8 +52,8 @@ select_host() {
   local selected_group="$1"
   echo "Now select a host to connect to:"
 
-  # Display hosts within the selected group
-  local hosts_list="${hosts[$selected_group]}"
+  # Display hosts within the selected group or all hosts
+  local hosts_list="${hosts["$selected_group"]}"
   IFS=' ' read -ra host_array <<< "$hosts_list"
   for i in "${!host_array[@]}"; do
     echo "$(($i + 1))) ${host_array[$i]}"

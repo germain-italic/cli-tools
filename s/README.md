@@ -11,7 +11,10 @@ Simply type `s` instead of `ssh`.
 # Requirements
 
 Follow the syntax in [ssh-config.sample](ssh-config.sample).
-Basically to create a group, add a comment line starting by `# Group <Group name>`.
+You don't need to create any group for the script to work.
+Hosts outside groups will be listed under "Connections without group".
+
+To create a group, add a comment line starting by `# Group <Group name>`.
 Then follow the standard syntax to create your hosts entries.
 - Tutorial: https://www.cyberciti.biz/faq/create-ssh-config-file-on-linux-unix/
 - Reference: https://linux.die.net/man/5/ssh_config
