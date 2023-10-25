@@ -6,6 +6,23 @@ parse_ssh_config() {
   local group_names=("Connections without group") # Initialize default group for orphan hosts
   declare -A hosts
 
+
+  # The default path to the SSH config file is defined in ../tools.sh
+  # You can also call the script directly with the path as argument:
+  # bash s/s.sh s/ssh-config.sample
+  # bash s/s.sh $HOME/.ssh/config
+  # (this is useful when debugging the script)
+
+  # Check if the parth argument is passed
+  if [ -n "$1" ]; then
+    config_file="$1"
+  fi
+
+  # Check if the config file exists
+  if [ ! -f "$config_file" ]; then
+    echo "Config file not found: $config_file"
+  fi
+
   # Read the SSH config file and populate group_names and hosts arrays
   while read -r line; do
     # echo "Line: $line"
@@ -35,7 +52,7 @@ parse_ssh_config() {
             ;;
           *)
             selected_group="$group_name"
-            echo "Selected group: $selected_group"
+            echo -e "Selected group: $selected_group"
             break
             ;;
         esac
@@ -75,19 +92,3 @@ select_host() {
     fi
   done
 }
-
-# The default path to the SSH config file is defined in ../tools.sh
-# You can also call the script directly with the path as argument:
-# bash s/s.sh s/ssh-config.sample
-# bash s/s.sh $HOME/.ssh/config
-# (this is useful when debugging the script)
-
-# Check if the parth argument is passed
-if [ -n "$1" ]; then
-  config_file="$1"
-fi
-
-# Check if the config file exists
-if [ ! -f "$config_file" ]; then
-  echo "Config file not found: $config_file"
-fi
