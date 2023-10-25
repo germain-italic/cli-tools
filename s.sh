@@ -4,45 +4,43 @@
 parse_ssh_config() {
   local config_file="$1"
 
-  awk '
-    BEGIN {
-      group = ""
-    }
-
+  awk -v IGNORE_HOST="Host *" '
     /^# Group (.+)/ {
-      if (group != "") {
-        groups[group] = hosts
-        hosts = ""
+      if (in_group) {
+        print_group()
       }
-      group = $3
+      in_group = 1
+      group_name = substr($0, 9)
+      next
     }
 
     /^Host (.+)/ {
-      if (hosts == "") {
-        hosts = $2
-      } else {
-        hosts = hosts ", " $2
+      if (in_group && $0 != IGNORE_HOST) {
+        hosts[group_name] = hosts[group_name] " " $2
       }
     }
 
     END {
-      if (group != "") {
-        groups[group] = hosts
+      if (in_group) {
+        print_group()
       }
-      for (group in groups) {
-        print "[" group "]"
-        split(groups[group], hosts_array, ", ")
-        asort(hosts_array)
-        for (i = 1; i <= length(hosts_array); i++) {
-          print "  Host: " hosts_array[i]
-        }
+    }
+
+    function print_group() {
+      print "[" group_name "]"
+      split(hosts[group_name], host_array)
+      n = asort(host_array)
+      for (i = 1; i <= n; i++) {
+        print "  Host: " host_array[i]
       }
+      delete hosts[group_name]
+      in_group = 0
     }
   ' "$config_file"
 }
 
 # Default path to the SSH config file
-config_file="$HOME/.ssh/config"
+config_file="ssh-config.sample"
 
 # Call the function to parse the SSH config file and display groups and hosts
 parse_ssh_config "$config_file"
