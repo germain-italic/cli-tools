@@ -43,3 +43,7 @@ Then restart your shell.
 ```
 cd ~/cli-tools && git pull && source ~/.bashrc
 ```
+
+# Todo
+
+- [ ] Use [Gum](https://github.com/charmbracelet/gum)
