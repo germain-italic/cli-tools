@@ -1,1 +1,1 @@
-source s.sh
+source ~/cli-tools/s.sh
