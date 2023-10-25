@@ -11,7 +11,7 @@ parse_ssh_config() {
     if [[ $line =~ ^#\ Group\ (.+) ]]; then
       current_group="${BASH_REMATCH[1]}"
       group_names+=("$current_group")
-    elif [[ $line =~ ^Host\ (.+) ]]; then
+    elif [[ $line =~ ^Host\ ([^*].*) ]]; then
       hosts["$current_group"]+=" ${BASH_REMATCH[1]}"
     fi
   done < "$config_file"
@@ -70,7 +70,8 @@ select_host() {
 }
 
 # Default path to the SSH config file
-config_file="ssh-config.sample"
+# config_file="ssh-config.sample"
+config_file="$HOME/.ssh/config"
 
 # Call the function to parse the SSH config file and display groups
 parse_ssh_config "$config_file"
