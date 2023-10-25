@@ -70,7 +70,3 @@ select_host() {
     fi
   done
 }
-
-# Default path to the SSH config file
-# config_file="ssh-config.sample"
-config_file="$HOME/.ssh/config"
