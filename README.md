@@ -19,5 +19,8 @@ echo -e "source ~/cli-tools/tools.sh" >> ~/.bashrc && source ~/.bashrc
 # Uninstall
 
 ```
-sed -i '/source ~/cli-tools\/tools.sh/d' ~/.bashrc && source ~/.bashrc
+rm -rf ~/cli-tools
+sed -i '/source ~/cli-tools\/tools.sh' ~/.bashrc
 ```
+
+Then restart your shell.
