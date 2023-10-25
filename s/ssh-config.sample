@@ -114,6 +114,7 @@ Host friendly_hostname20
 
 
 # SSH connection settins
+# LogLevel possible values: QUIET FATAL ERROR INFO VERBOSE DEBUG DEBUG1 DEBUG2
 
 Host *
   ServerAliveInterval 50
@@ -121,5 +122,5 @@ Host *
   Compression yes
   Port 22
   Compression yes
-  LogLevel INFO # QUIET FATAL ERROR INFO VERBOSE DEBUG DEBUG1 DEBUG2
+  LogLevel INFO
   ForwardAgent yes
