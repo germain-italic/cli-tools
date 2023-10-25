@@ -26,7 +26,7 @@ parse_ssh_config() {
         case $group_name in
           "Exit")
             echo "Goodbye!"
-            # exit 0
+            exit 0
             ;;
           *)
             selected_group="$group_name"
