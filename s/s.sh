@@ -6,7 +6,6 @@ parse_ssh_config() {
   local group_names=("Connections without group") # Initialize default group for orphan hosts
   declare -A hosts
 
-
   # The default path to the SSH config file is defined in ../tools.sh
   # You can also call the script directly with the path as argument:
   # bash s/s.sh s/ssh-config.sample
@@ -36,7 +35,7 @@ parse_ssh_config() {
         hosts["Connections without group"]+=" ${BASH_REMATCH[1]}"
       fi
     fi
-  done < "$config_file"
+  done <"$config_file"
 
   local selected_group=""
 
@@ -46,15 +45,15 @@ parse_ssh_config() {
     if [ -z "$selected_group" ]; then
       select group_name in "${group_names[@]}" "Exit"; do
         case $group_name in
-          "Exit")
-            echo "Goodbye!"
-            return 1
-            ;;
-          *)
-            selected_group="$group_name"
-            echo -e "Selected group: $selected_group"
-            break
-            ;;
+        "Exit")
+          echo "Goodbye!"
+          return 1
+          ;;
+        *)
+          selected_group="$group_name"
+          echo "Selected group: $selected_group"
+          break
+          ;;
         esac
       done
     else
@@ -71,7 +70,7 @@ select_host() {
 
   # Display hosts within the selected group or all hosts
   local hosts_list="${hosts["$selected_group"]}"
-  IFS=' ' read -ra host_array <<< "$hosts_list"
+  IFS=' ' read -ra host_array <<<"$hosts_list"
   for i in "${!host_array[@]}"; do
     echo "$(($i + 1))) ${host_array[$i]}"
   done
@@ -81,7 +80,7 @@ select_host() {
     read -p "Select a host (number) or type '-' to return to groups: " input
 
     if [[ "$input" == "-" || "$input" == "leftarrow" ]]; then
-      return  # Return to group selection
+      return # Return to group selection
     elif [[ "$input" =~ ^[0-9]+$ ]] && ((input >= 1 && input <= ${#host_array[@]})); then
       selected_host="${host_array[$input - 1]}"
       echo "You selected host: $selected_host - connecting..."

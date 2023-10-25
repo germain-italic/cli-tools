@@ -5,122 +5,113 @@ Host test2_orphan_host
 # Group Group 1 Name
 
 Host efriendly_hostname1
-  Hostname hostname.domain.com
-  User username
-  HostKeyAlgorithms +ssh-rsa
-  PubkeyAcceptedKeyTypes +ssh-rsa
+Hostname hostname.domain.com
+User username
+HostKeyAlgorithms +ssh-rsa
+PubkeyAcceptedKeyTypes +ssh-rsa
 
 Host b_friendly_hostname2
-  Hostname hostname.domain.com
-  User username
+Hostname hostname.domain.com
+User username
 
 Host a-friendly_hostname3
-  Hostname hostname.domain.com
-  User username
+Hostname hostname.domain.com
+User username
 
 Host c.friendly_hostname4
-  Hostname hostname.domain.com
-  User username
-
+Hostname hostname.domain.com
+User username
 
 # Group Group 5 Name
 
-
 Host friendly_hostname25
-  Hostname hostname.domain.com
-  User username
+Hostname hostname.domain.com
+User username
 
 Host friendly_hostname24
-  Hostname hostname.domain.com
-  User username
-  IdentityFile ~/.ssh/id_rsa
-  ProxyJump proxydef
+Hostname hostname.domain.com
+User username
+IdentityFile ~/.ssh/id_rsa
+ProxyJump proxydef
 
 Host friendly_hostname23
-  Hostname hostname.domain.com
-  User username
-  IdentityFile ~/.ssh/id_rsa
-  ProxyJump proxydef
+Hostname hostname.domain.com
+User username
+IdentityFile ~/.ssh/id_rsa
+ProxyJump proxydef
 
 Host friendly_hostname22
-  Hostname hostname.domain.com
-  User username
-
+Hostname hostname.domain.com
+User username
 
 # Group Group 2 Name
 
 Host friendly_hostname5
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 Host friendly_hostname6
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 Host friendly_hostname7
-  HostName hostname.domain.com
-  HostKeyAlgorithms=+ssh-dss
-  Port 2222
+HostName hostname.domain.com
+HostKeyAlgorithms=+ssh-dss
+Port 2222
 
 Host friendly_hostname8
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 Host friendly_hostname9
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 Host friendly_hostname10
-  Hostname hostname.domain.com
-  Port 2222
+Hostname hostname.domain.com
+Port 2222
 
 Host friendly_hostname11
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 Host friendly_hostname12
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 Host friendly_hostname13
-  Hostname hostname.domain.com
-
-
+Hostname hostname.domain.com
 
 # Group Group 3 Name
 
 Host friendly_hostname14
-  Hostname hostname.domain.com
+Hostname hostname.domain.com
 
 # a comment
 Host friendly_hostname15
-  HostName hostname.domain.com
+HostName hostname.domain.com
 
 Host friendly_hostname16
-  Hostname hostname.domain.com
-
+Hostname hostname.domain.com
 
 Host friendly_hostname17
-  Hostname hostname.domain.com
-  User username
+Hostname hostname.domain.com
+User username
 
 Host friendly_hostname18
-  Hostname hostname.domain.com
-  User username
+Hostname hostname.domain.com
+User username
 
 Host friendly_hostname19
-  Hostname hostname.domain.com
-
+Hostname hostname.domain.com
 
 # Group Group 4 Name
 
 Host friendly_hostname20
-  Hostname hostname.domain.com
-
-
+Hostname hostname.domain.com
 
 # SSH connection settins
 # LogLevel possible values: QUIET FATAL ERROR INFO VERBOSE DEBUG DEBUG1 DEBUG2
 
 Host *
-  ServerAliveInterval 50
-  User username
-  Compression yes
-  Port 22
-  Compression yes
-  LogLevel INFO
-  ForwardAgent yes
+ServerAliveInterval 50
+User username
+Compression yes
+Port 22
+Compression yes
+LogLevel INFO
+ForwardAgent yes
