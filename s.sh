@@ -1,29 +1,48 @@
 #!/bin/bash
 
-# Function to parse the SSH config file and extract groups
+# Function to parse the SSH config file and extract groups and hosts
 parse_ssh_config() {
   local config_file="$1"
-  local groups=()
 
-  while IFS= read -r line; do
-    if [[ "$line" =~ ^\#\ Group\ (.+) ]]; then
-      groups+=("${BASH_REMATCH[1]}")
-    fi
-  done < "$config_file"
+  awk '
+    BEGIN {
+      group = ""
+    }
 
-  # Sort the groups alphabetically
-  sorted_groups=($(printf "%s\n" "${groups[@]}" | sort))
-  echo "${sorted_groups[@]}"
+    /^# Group (.+)/ {
+      if (group != "") {
+        groups[group] = hosts
+        hosts = ""
+      }
+      group = $3
+    }
+
+    /^Host (.+)/ {
+      if (hosts == "") {
+        hosts = $2
+      } else {
+        hosts = hosts ", " $2
+      }
+    }
+
+    END {
+      if (group != "") {
+        groups[group] = hosts
+      }
+      for (group in groups) {
+        print "[" group "]"
+        split(groups[group], hosts_array, ", ")
+        asort(hosts_array)
+        for (i = 1; i <= length(hosts_array); i++) {
+          print "  Host: " hosts_array[i]
+        }
+      }
+    }
+  ' "$config_file"
 }
 
 # Default path to the SSH config file
 config_file="$HOME/.ssh/config"
 
-# Call the function to parse the SSH config file and display groups
-parsed_groups=($(parse_ssh_config "$config_file"))
-
-# Display the sorted groups
-echo "List of groups:"
-for group in "${parsed_groups[@]}"; do
-  echo "$group"
-done
+# Call the function to parse the SSH config file and display groups and hosts
+parse_ssh_config "$config_file"
