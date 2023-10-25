@@ -12,9 +12,7 @@ curl -sSL https://raw.githubusercontent.com/germain-italic/cli-tools/master/inst
 
 ```
 git clone https://github.com/germain-italic/cli-tools.git ~/cli-tools
-
 echo -e "source ~/cli-tools/tools.sh" >> ~/.bashrc
-
 source ~/.bashrc
 ```
 
@@ -22,7 +20,7 @@ source ~/.bashrc
 
 ```
 rm -rf ~/cli-tools
-sed -i '/source ~/cli-tools\/tools.sh' ~/.bashrc
+sed -i '/source ~\/cli-tools\/tools.sh/d' ~/.bashrc
 ```
 
 Then restart your shell.
