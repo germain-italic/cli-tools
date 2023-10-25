@@ -26,7 +26,7 @@ parse_ssh_config() {
         case $group_name in
           "Exit")
             echo "Goodbye!"
-            exit 0
+            # exit 0
             ;;
           *)
             selected_group="$group_name"
@@ -74,6 +74,3 @@ select_host() {
 # Default path to the SSH config file
 # config_file="ssh-config.sample"
 config_file="$HOME/.ssh/config"
-
-# Call the function to parse the SSH config file and display groups
-alias s='parse_ssh_config "$config_file"'
