@@ -26,3 +26,9 @@ sed -i '/source ~/cli-tools\/tools.sh' ~/.bashrc
 ```
 
 Then restart your shell.
+
+# Update
+
+```
+cd ~/cli-tools && git pull && source ~/.bashrc
+```
