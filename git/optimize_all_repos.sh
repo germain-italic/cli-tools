@@ -82,6 +82,8 @@ for dir in "$ROOT_DIR"/*/; do
         # Vérifier si le répertoire contient un sous-répertoire .git
         if [ -d "$dir/.git" ]; then
             ((count++))
+            # Afficher le répertoire scanné
+            echo "Scanné le répertoire : $dir"
             # Exécuter les commandes dans le dépôt Git
             execute_commands "$dir"
         fi
