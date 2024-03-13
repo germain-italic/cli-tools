@@ -4,7 +4,7 @@
 ROOT_DIR="/var/chroot"
 
 # Définir le compteur maximum de répertoires à scanner
-MAX_REPOS=1
+MAX_REPOS=1000000
 # Compteur pour suivre le nombre de répertoires traités
 count=0
 
