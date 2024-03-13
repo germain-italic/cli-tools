@@ -4,7 +4,7 @@
 ROOT_DIR="/var/chroot"
 
 # Définir le compteur maximum de répertoires à scanner
-MAX_REPOS=10
+MAX_REPOS=1
 # Compteur pour suivre le nombre de répertoires traités
 count=0
 
@@ -93,3 +93,4 @@ echo "Synthèse des optimisations effectuées : " > report.txt
 echo "Commande git gc, git prune et git repack ont été exécutées dans les $count dépôts Git." >> report.txt
 echo "Le script a été arrêté après avoir scanné $MAX_REPOS dépôts Git." >> report.txt
 mail -s "Rapport d'optimisation des dépôts Git" support@italic.fr < report.txt
+cat report.txt
