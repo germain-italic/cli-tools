@@ -71,6 +71,12 @@ execute_commands() {
 
 # Parcourir tous les répertoires de niveau supérieur dans ROOT_DIR
 for dir in "$ROOT_DIR"/*/; do
+    # Vérifier si le nombre maximum de répertoires à scanner a été atteint
+    if [ "$count" -ge "$MAX_REPOS" ]; then
+        echo "Nombre maximum de répertoires à scanner atteint. Arrêt du processus."
+        break
+    fi
+
     # Vérifier si le répertoire est un répertoire
     if [ -d "$dir" ]; then
         # Vérifier si le répertoire contient un sous-répertoire .git
@@ -79,12 +85,6 @@ for dir in "$ROOT_DIR"/*/; do
             # Exécuter les commandes dans le dépôt Git
             execute_commands "$dir"
         fi
-    fi
-
-    # Vérifier si le nombre maximum de répertoires à scanner a été atteint
-    if [ "$count" -ge "$MAX_REPOS" ]; then
-        echo "Nombre maximum de répertoires à scanner atteint. Arrêt du processus."
-        break
     fi
 done
 
