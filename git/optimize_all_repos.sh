@@ -4,7 +4,7 @@
 ROOT_DIR="/var/chroot"
 
 # Définir le compteur maximum de répertoires à scanner
-MAX_REPOS=1
+MAX_REPOS=10
 # Compteur pour suivre le nombre de répertoires traités
 count=0
 
@@ -20,7 +20,7 @@ execute_commands() {
         cd "$repo_dir" || return
 
         # Afficher la commande git gc avant l'exécution
-        echo " "
+        echo "Exécution de la commande git gc..."
         gc_command="git gc --aggressive"
         echo "$gc_command"
 
@@ -36,7 +36,7 @@ execute_commands() {
         fi
 
         # Afficher la commande git prune avant l'exécution
-        echo " "
+        echo "Exécution de la commande git prune..."
         prune_command="git prune"
         echo "$prune_command"
 
@@ -52,7 +52,7 @@ execute_commands() {
         fi
 
         # Afficher la commande git repack avant l'exécution
-        echo " "
+        echo "Exécution de la commande git repack..."
         repack_command="git repack -a -d --depth=250 --window=250"
         echo "$repack_command"
 
@@ -75,9 +75,9 @@ for dir in "$ROOT_DIR"/*/; do
     if [ -d "$dir" ]; then
         # Vérifier si le répertoire contient un sous-répertoire .git
         if [ -d "$dir/.git" ]; then
+            ((count++))
             # Exécuter les commandes dans le dépôt Git
             execute_commands "$dir"
-            ((count++))
         fi
     fi
 
