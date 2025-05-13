@@ -31,7 +31,7 @@ echo "| Nom de la règle          | Adresse IP         | Activée |"
 echo "------------------------------------------"
 
 if command -v jq >/dev/null 2>&1; then
-    jq -r '.rules.global[] | select(.ipList != null and .ipList | length > 0) | [.name, .ipList[0], .enable] | @tsv' "$PROFILE_FILE" | \
+    jq -r '.rules.global[] | select(.ipList | type == "array" and length > 0) | [.name, .ipList[0], .enable] | @tsv' "$PROFILE_FILE" \
     while IFS=$'\t' read -r name ip enabled; do
         # Formater la sortie avec des colonnes de largeur fixe
         printf "| %-22s | %-18s | %-7s |\n" "$name" "$ip" "$enabled"
