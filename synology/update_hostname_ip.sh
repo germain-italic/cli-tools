@@ -94,9 +94,6 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
     echo "$(date +'%Y-%m-%d %H:%M:%S') $CURRENT_IP" >> "$IP_HISTORY_FILE"
     
     echo "Mise à jour du firewall terminée avec succès"    
-    echo ""
-    echo "Nouvelles règles :"
-    "./list_firewall_rules.sh"
 else
     echo "L'adresse IP n'a pas changé, aucune action nécessaire"
 fi
