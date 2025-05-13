@@ -9,6 +9,8 @@ Shell scripts to manage Synology DSM 7.x firewall rules dynamically via SSH, wit
 - `list_firewall_rules.sh`: Lists firewall rules with their name, IP address(es), and status
 - `update_hostname_ip.sh`: Resolves a hostname (e.g., DDNS) and updates the firewall rule if the associated IP changes
 - `rotate_logs_ip.sh`: Rotates the log file `/var/log/update_noip.log` when it exceeds 1MB
+- `update_firewall_rule_name.sh`: Updates the "name" field of a firewall rule matching a specific IP address
+
 
 ---
 
@@ -76,7 +78,7 @@ or
 ./update_hostname_ip.sh myhome.ddns.net
 ```
 
-If no argument is provided, it defaults to `italicfrgermru.ddns.net`.
+If no argument is provided, it defaults to `myhome.ddns.net`.
 
 ---
 
@@ -86,7 +88,18 @@ If no argument is provided, it defaults to `italicfrgermru.ddns.net`.
 ./rotate_logs_ip.sh
 ```
 
+
 ---
+
+### Update the name of a specific firewall rule
+
+```bash
+./update_firewall_rule_name.sh 192.168.1.100 myhome.ddns.net
+```
+
+This command will locate the rule containing the specified IP and update its `"name"` attribute.  
+After execution, `list_firewall_rules.sh` will be called automatically to verify the result.
+
 
 ## 🛠️ Schedule via DSM GUI (Task Scheduler)
 
