@@ -68,6 +68,7 @@ fi
 LAST_IP=$(grep -E "^LAST_IP=" "$IP_HISTORY_FILE" | cut -d'=' -f2)
 
 echo "Dernière IP connue: $LAST_IP"
+echo "(Supprimez /tmp/home_ip_history.txt pour remettre à zéro)"
 
 # Si l'IP a changé
 if [ "$CURRENT_IP" != "$LAST_IP" ]; then
