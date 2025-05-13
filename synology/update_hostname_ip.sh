@@ -10,13 +10,13 @@ IP_HISTORY_FILE="/tmp/home_ip_history.txt"
 SCRIPT_DIR="$(dirname "$0")"
 
 # Vérifier si le script d'ajout et de suppression sont présents
-if [ ! -f "$SCRIPT_DIR/add_firewall.sh" ] || [ ! -f "$SCRIPT_DIR/remove_firewall_ip.sh" ]; then
-    echo "Erreur: Les scripts add_firewall.sh et remove_firewall_ip.sh doivent être dans le même répertoire"
+if [ ! -f "$SCRIPT_DIR/add_firewall_ip.sh" ] || [ ! -f "$SCRIPT_DIR/remove_firewall_ip.sh" ]; then
+    echo "Erreur: Les scripts add_firewall_ip.sh et remove_firewall_ip.sh doivent être dans le même répertoire"
     exit 1
 fi
 
 # Rendre les scripts exécutables si nécessaire
-chmod +x "$SCRIPT_DIR/add_firewall.sh" "$SCRIPT_DIR/remove_firewall_ip.sh"
+chmod +x "$SCRIPT_DIR/add_firewall_ip.sh" "$SCRIPT_DIR/remove_firewall_ip.sh"
 
 # Obtenir l'adresse IP actuelle associée au hostname
 echo "Résolution du hostname $HOSTNAME..."
@@ -65,7 +65,7 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
     
     # Ajouter la nouvelle IP
     echo "Ajout de la nouvelle IP $CURRENT_IP pour $HOSTNAME..."
-    "$SCRIPT_DIR/add_firewall.sh" "$CURRENT_IP" "$HOSTNAME"
+    "$SCRIPT_DIR/add_firewall_ip.sh" "$CURRENT_IP" "$HOSTNAME"
     
     # Mettre à jour l'historique
     sed -i "s/^LAST_IP=.*/LAST_IP=$CURRENT_IP/" "$IP_HISTORY_FILE"
