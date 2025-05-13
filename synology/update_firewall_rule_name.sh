@@ -68,3 +68,11 @@ fi
 /usr/syno/bin/synofirewall --reload
 
 rm -f "$TMP_FILE"
+
+# Réafficher les règles
+SCRIPT_DIR="$(dirname "$0")"
+if [ -x "$SCRIPT_DIR/list_firewall_rules.sh" ]; then
+    echo
+    echo "Règles mises à jour :"
+    "$SCRIPT_DIR/list_firewall_rules.sh"
+fi
