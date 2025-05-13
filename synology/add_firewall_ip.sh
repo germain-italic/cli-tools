@@ -1,18 +1,19 @@
 #!/bin/bash
 
 # Ce script ajoute une IP à la whitelist du firewall Synology DSM 7.x
-# en la plaçant avant la règle "deny"
-# Usage: ./add_firewall_ip.sh <adresse_ip>
+# en utilisant un hostname comme nom de la règle
+# Usage: ./add_firewall_hostname.sh <adresse_ip> <hostname>
 
-# Vérifier si une adresse IP a été fournie
-if [ $# -ne 1 ]; then
-    echo "Usage: $0 <adresse_ip>"
-    echo "Exemple: $0 192.168.1.100"
+# Vérifier si les paramètres nécessaires sont fournis
+if [ $# -ne 2 ]; then
+    echo "Usage: $0 <adresse_ip> <hostname>"
+    echo "Exemple: $0 192.168.1.100 maison.ddns.net"
     exit 1
 fi
 
-# Adresse IP à ajouter
+# Adresse IP et hostname
 IP_TO_ADD="$1"
+HOSTNAME="$2"
 
 # Vérifier le format de l'IP (validation basique)
 if ! [[ $IP_TO_ADD =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
@@ -61,13 +62,14 @@ BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
 echo "Sauvegarde créée: $BACKUP_FILE"
 
-# Vérifier si l'IP existe déjà dans les règles iptables
-if iptables -S | grep -q "$IP_TO_ADD"; then
-    echo "INFO: L'adresse IP $IP_TO_ADD est déjà présente dans les règles iptables"
+# Vérifier si le hostname existe déjà dans le fichier
+if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
+    echo "Un règle avec le hostname $HOSTNAME existe déjà"
+    echo "Utilisez remove_firewall_hostname.sh pour supprimer la règle existante d'abord"
+    exit 0
 fi
 
-# Nous allons adopter une approche plus simple mais fiable : extraire le contenu JSON,
-# le modifier manuellement pour ajouter notre nouvelle règle, puis le réécrire
+# Nous allons adopter une approche simple mais fiable
 if command -v jq >/dev/null 2>&1; then
     # Vérifier que le fichier est un JSON valide
     if ! jq empty "$PROFILE_FILE" 2>/dev/null; then
@@ -75,103 +77,54 @@ if command -v jq >/dev/null 2>&1; then
         exit 1
     fi
     
-    # Extraire la structure de base du JSON
-    JSON_CONTENT=$(cat "$PROFILE_FILE")
+    # Trouver la position de la règle deny (policy=1)
+    DENY_INDEX=$(jq '.rules.global | map(.policy) | index(1)' "$PROFILE_FILE")
     
-    # Créer la nouvelle règle sous forme de chaîne JSON
-    NEW_RULE='{
+    if [ "$DENY_INDEX" = "null" ] || [ -z "$DENY_INDEX" ]; then
+        echo "Aucune règle deny trouvée. La nouvelle règle sera ajoutée à la fin."
+        DENY_INDEX=$(jq '.rules.global | length' "$PROFILE_FILE")
+    fi
+    
+    echo "Position de la règle deny: $DENY_INDEX"
+    
+    # Créer un fichier temporaire
+    TMP_FILE=$(mktemp)
+    
+    # Créer la nouvelle règle et l'insérer avant la règle deny
+    jq --arg ip "$IP_TO_ADD" --arg hostname "$HOSTNAME" --argjson pos "$DENY_INDEX" '
+    .rules.global = .rules.global[0:$pos] + [
+      {
         "adapterDirect": 1,
         "blLog": false,
-        "chainList": [
-          "FORWARD_FIREWALL",
-          "INPUT_FIREWALL"
-        ],
+        "chainList": ["FORWARD_FIREWALL", "INPUT_FIREWALL"],
         "enable": true,
         "ipDirect": 1,
         "ipGroup": 0,
-        "ipList": [
-          "'$IP_TO_ADD'"
-        ],
+        "ipList": [$ip],
         "ipType": 0,
         "labelList": [],
-        "name": "'$IP_TO_ADD'",
+        "name": $hostname,
         "policy": 0,
         "portDirect": 0,
         "portGroup": 3,
         "portList": [],
         "protocol": 3,
-        "ruleIndex": 999,
+        "ruleIndex": (.rules.global | map(.ruleIndex) | max + 1),
         "table": "filter"
-      }'
+      }
+    ] + .rules.global[$pos:]
+    ' "$PROFILE_FILE" > "$TMP_FILE"
     
-    # Trouver la position de la règle deny
-    # Rechercher la première règle avec "policy": 1
-    DENY_POSITION=$(echo "$JSON_CONTENT" | grep -n '"policy"[[:space:]]*:[[:space:]]*1' | head -1 | cut -d':' -f1)
-    
-    if [ -z "$DENY_POSITION" ]; then
-        echo "Aucune règle deny trouvée. Nous allons ajouter la règle à la fin."
-        # Trouver la position de la dernière accolade fermante dans rules.global
-        LAST_BRACKET=$(echo "$JSON_CONTENT" | grep -n ']' | tail -1 | cut -d':' -f1)
-        
-        # Créer un fichier temporaire
-        TMP_FILE=$(mktemp)
-        
-        # Insérer la règle avant la dernière accolade fermante
-        head -n $((LAST_BRACKET - 1)) "$PROFILE_FILE" > "$TMP_FILE"
-        if [ "$(tail -1 "$TMP_FILE" | tr -d '[:space:]')" != "{" ]; then
-            # Si la dernière ligne n'est pas une accolade ouvrante, ajouter une virgule
-            echo "," >> "$TMP_FILE"
-        fi
-        echo "$NEW_RULE" >> "$TMP_FILE"
-        tail -n +$((LAST_BRACKET)) "$PROFILE_FILE" >> "$TMP_FILE"
+    # Vérifier que le fichier temporaire est valide et non vide
+    if [ -s "$TMP_FILE" ] && jq empty "$TMP_FILE" 2>/dev/null; then
+        echo "Modification réussie, application des changements"
+        cp "$TMP_FILE" "$PROFILE_FILE"
+        rm -f "$TMP_FILE"
     else
-        # Trouver le début de la règle deny (accolade ouvrante)
-        DENY_START=$(echo "$JSON_CONTENT" | head -n $DENY_POSITION | grep -n '{' | tail -1 | cut -d':' -f1)
-        
-        # Créer un fichier temporaire
-        TMP_FILE=$(mktemp)
-        
-        # Insérer la règle avant la règle deny
-        head -n $((DENY_START - 1)) "$PROFILE_FILE" > "$TMP_FILE"
-        echo "$NEW_RULE," >> "$TMP_FILE"
-        tail -n +$((DENY_START)) "$PROFILE_FILE" >> "$TMP_FILE"
+        echo "Erreur lors de la modification du fichier JSON"
+        rm -f "$TMP_FILE"
+        exit 1
     fi
-    
-    # Vérifier que le fichier temporaire est un JSON valide
-    if ! jq empty "$TMP_FILE" 2>/dev/null; then
-        echo "Erreur: Le fichier modifié n'est pas un JSON valide"
-        echo "Essayons une autre approche..."
-        
-        # Approche alternative utilisant des marqueurs simples
-        # Trouver la section "rules": { "global": [
-        RULES_START=$(grep -n '"rules"[[:space:]]*:[[:space:]]*{[[:space:]]*"global"[[:space:]]*:[[:space:]]*\[' "$PROFILE_FILE" | cut -d':' -f1)
-        if [ -n "$RULES_START" ]; then
-            RULES_START=$((RULES_START + 1))  # Ligne suivante
-            
-            # Créer un fichier temporaire
-            rm -f "$TMP_FILE"
-            TMP_FILE=$(mktemp)
-            
-            # Insérer la règle au début de la section rules.global
-            head -n $RULES_START "$PROFILE_FILE" > "$TMP_FILE"
-            echo "$NEW_RULE," >> "$TMP_FILE"
-            tail -n +$((RULES_START + 1)) "$PROFILE_FILE" >> "$TMP_FILE"
-            
-            if ! jq empty "$TMP_FILE" 2>/dev/null; then
-                echo "Erreur: Échec de l'approche alternative"
-                rm -f "$TMP_FILE"
-                exit 1
-            fi
-        else
-            echo "Erreur: Impossible de trouver la section rules.global"
-            rm -f "$TMP_FILE"
-            exit 1
-        fi
-    fi
-    
-    # Appliquer les modifications
-    mv "$TMP_FILE" "$PROFILE_FILE"
-    echo "Modification du fichier JSON réussie"
 else
     echo "jq n'est pas disponible, impossible d'ajouter la règle correctement"
     exit 1
@@ -188,7 +141,7 @@ if ! /usr/syno/bin/synofirewall --reload; then
     exit 1
 fi
 
-echo "Adresse IP $IP_TO_ADD ajoutée à la whitelist avec succès"
+echo "Adresse IP $IP_TO_ADD ajoutée à la whitelist avec le nom $HOSTNAME"
 
 # Vérifier que l'IP est bien dans les règles iptables
 if iptables -S | grep -q "$IP_TO_ADD"; then
@@ -197,9 +150,9 @@ else
     echo "ATTENTION: L'IP n'est pas présente dans les règles iptables"
 fi
 
-# La vérification du fichier JSON est simplifiée
-if grep -q "$IP_TO_ADD" "$PROFILE_FILE"; then
-    echo "Vérification réussie: l'IP a bien été ajoutée au fichier de configuration"
+# Vérifier que le hostname est bien dans le fichier de configuration
+if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
+    echo "Vérification réussie: le hostname a bien été ajouté au fichier de configuration"
 else
-    echo "ATTENTION: L'IP ne semble pas être dans le fichier de configuration"
+    echo "ATTENTION: Le hostname ne semble pas être dans le fichier de configuration"
 fi
