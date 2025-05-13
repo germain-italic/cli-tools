@@ -10,13 +10,13 @@ IP_HISTORY_FILE="/tmp/home_ip_history.txt"
 SCRIPT_DIR="$(dirname "$0")"
 
 # Vérifier si le script d'ajout et de suppression sont présents
-if [ ! -f "$SCRIPT_DIR/add_firewall.sh" ] || [ ! -f "$SCRIPT_DIR/remove_firewall.sh" ]; then
-    echo "Erreur: Les scripts add_firewall.sh et remove_firewall.sh doivent être dans le même répertoire"
+if [ ! -f "$SCRIPT_DIR/add_firewall.sh" ] || [ ! -f "$SCRIPT_DIR/remove_firewall_ip.sh" ]; then
+    echo "Erreur: Les scripts add_firewall.sh et remove_firewall_ip.sh doivent être dans le même répertoire"
     exit 1
 fi
 
 # Rendre les scripts exécutables si nécessaire
-chmod +x "$SCRIPT_DIR/add_firewall.sh" "$SCRIPT_DIR/remove_firewall.sh"
+chmod +x "$SCRIPT_DIR/add_firewall.sh" "$SCRIPT_DIR/remove_firewall_ip.sh"
 
 # Obtenir l'adresse IP actuelle associée au hostname
 echo "Résolution du hostname $HOSTNAME..."
@@ -60,7 +60,7 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
     # Si une IP précédente existe, la supprimer du firewall
     if [ -n "$LAST_IP" ]; then
         echo "Suppression de l'ancienne règle pour $HOSTNAME..."
-        "$SCRIPT_DIR/remove_firewall.sh" "$HOSTNAME"
+        "$SCRIPT_DIR/remove_firewall_ip.sh" "$HOSTNAME"
     fi
     
     # Ajouter la nouvelle IP
