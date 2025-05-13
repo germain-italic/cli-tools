@@ -5,7 +5,7 @@
 # Usage: ./update_hostname_ip.sh [hostname]
 
 # Configuration
-DEFAULT_HOSTNAME="italicfrgermru.ddns.net"
+DEFAULT_HOSTNAME="myhome.ddns.net"
 HOSTNAME=${1:-$DEFAULT_HOSTNAME}  # Utilise le paramètre s'il est fourni, sinon la valeur par défaut
 IP_HISTORY_FILE="/tmp/home_ip_history.txt"
 SCRIPT_DIR="$(dirname "$0")"
@@ -93,7 +93,14 @@ if [ "$CURRENT_IP" != "$LAST_IP" ]; then
     sed -i "s/^LAST_IP=.*/LAST_IP=$CURRENT_IP/" "$IP_HISTORY_FILE"
     echo "$(date +'%Y-%m-%d %H:%M:%S') $CURRENT_IP" >> "$IP_HISTORY_FILE"
     
-    echo "Mise à jour du firewall terminée avec succès"
+    echo "Mise à jour du firewall terminée avec succès"    
 else
     echo "L'adresse IP n'a pas changé, aucune action nécessaire"
+fi
+
+SCRIPT_DIR="$(dirname "$0")"
+if [ -x "$SCRIPT_DIR/list_firewall_rules.sh" ]; then
+    echo
+    echo "Nouvelles règles :"
+    "$SCRIPT_DIR/list_firewall_rules.sh"
 fi
