@@ -1,19 +1,26 @@
 #!/bin/bash
 
 # Ce script ajoute une IP à la whitelist du firewall Synology DSM 7.x
-# en utilisant un hostname comme nom de la règle
-# Usage: ./add_firewall_hostname.sh <adresse_ip> <hostname>
+# Usage: ./add_firewall_ip.sh <adresse_ip> [hostname]
+# Si hostname n'est pas fourni, l'adresse IP sera utilisée comme nom
 
-# Vérifier si les paramètres nécessaires sont fournis
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 <adresse_ip> <hostname>"
+# Vérifier si au moins une adresse IP a été fournie
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <adresse_ip> [hostname]"
     echo "Exemple: $0 192.168.1.100 maison.ddns.net"
     exit 1
 fi
 
-# Adresse IP et hostname
+# Adresse IP à ajouter
 IP_TO_ADD="$1"
-HOSTNAME="$2"
+
+# Utiliser le hostname fourni ou par défaut l'adresse IP comme nom
+if [ $# -gt 1 ]; then
+    RULE_NAME="$2"
+else
+    RULE_NAME="$IP_TO_ADD"
+    echo "Aucun hostname fourni, utilisation de l'adresse IP comme nom de la règle"
+fi
 
 # Vérifier le format de l'IP (validation basique)
 if ! [[ $IP_TO_ADD =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
@@ -62,22 +69,27 @@ BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
 echo "Sauvegarde créée: $BACKUP_FILE"
 
-# Vérifier si le hostname existe déjà dans le fichier
-if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
-    echo "Un règle avec le hostname $HOSTNAME existe déjà"
-    echo "Utilisez remove_firewall_hostname.sh pour supprimer la règle existante d'abord"
+# Vérifier si le nom de règle existe déjà dans le fichier
+if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
+    echo "Une règle avec le nom $RULE_NAME existe déjà"
+    echo "Utilisez remove_firewall_ip.sh pour supprimer la règle existante d'abord"
     exit 0
 fi
 
-# Nous allons adopter une approche simple mais fiable
+# Vérifier si l'IP existe déjà dans les règles iptables
+if iptables -S | grep -q "$IP_TO_ADD"; then
+    echo "INFO: L'adresse IP $IP_TO_ADD est déjà présente dans les règles iptables"
+fi
+
+# Vérifier la structure du JSON et identifier l'index de la règle deny
 if command -v jq >/dev/null 2>&1; then
-    # Vérifier que le fichier est un JSON valide
+    # Vérifier si le fichier est un JSON valide
     if ! jq empty "$PROFILE_FILE" 2>/dev/null; then
         echo "Erreur: Le fichier de profil n'est pas un JSON valide"
         exit 1
     fi
     
-    # Trouver la position de la règle deny (policy=1)
+    # Trouver l'index de la règle deny (policy=1)
     DENY_INDEX=$(jq '.rules.global | map(.policy) | index(1)' "$PROFILE_FILE")
     
     if [ "$DENY_INDEX" = "null" ] || [ -z "$DENY_INDEX" ]; then
@@ -91,7 +103,7 @@ if command -v jq >/dev/null 2>&1; then
     TMP_FILE=$(mktemp)
     
     # Créer la nouvelle règle et l'insérer avant la règle deny
-    jq --arg ip "$IP_TO_ADD" --arg hostname "$HOSTNAME" --argjson pos "$DENY_INDEX" '
+    jq --arg ip "$IP_TO_ADD" --arg name "$RULE_NAME" --argjson pos "$DENY_INDEX" '
     .rules.global = .rules.global[0:$pos] + [
       {
         "adapterDirect": 1,
@@ -103,7 +115,7 @@ if command -v jq >/dev/null 2>&1; then
         "ipList": [$ip],
         "ipType": 0,
         "labelList": [],
-        "name": $hostname,
+        "name": $name,
         "policy": 0,
         "portDirect": 0,
         "portGroup": 3,
@@ -141,7 +153,7 @@ if ! /usr/syno/bin/synofirewall --reload; then
     exit 1
 fi
 
-echo "Adresse IP $IP_TO_ADD ajoutée à la whitelist avec le nom $HOSTNAME"
+echo "Adresse IP $IP_TO_ADD ajoutée à la whitelist avec le nom $RULE_NAME"
 
 # Vérifier que l'IP est bien dans les règles iptables
 if iptables -S | grep -q "$IP_TO_ADD"; then
@@ -150,9 +162,9 @@ else
     echo "ATTENTION: L'IP n'est pas présente dans les règles iptables"
 fi
 
-# Vérifier que le hostname est bien dans le fichier de configuration
-if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
-    echo "Vérification réussie: le hostname a bien été ajouté au fichier de configuration"
+# Vérifier que le nom de règle est bien dans le fichier de configuration
+if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
+    echo "Vérification réussie: le nom de règle a bien été ajouté au fichier de configuration"
 else
-    echo "ATTENTION: Le hostname ne semble pas être dans le fichier de configuration"
+    echo "ATTENTION: Le nom de règle ne semble pas être dans le fichier de configuration"
 fi
