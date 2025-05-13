@@ -13,6 +13,12 @@ fi
 # Adresse IP à supprimer
 IP_TO_REMOVE="$1"
 
+# Vérifier le format de l'IP (validation basique)
+if ! [[ $IP_TO_REMOVE =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    echo "Erreur: Format d'adresse IP invalide"
+    exit 1
+fi
+
 # Chemin vers les fichiers de configuration du firewall
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
 
@@ -54,12 +60,8 @@ BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
 echo "Sauvegarde créée: $BACKUP_FILE"
 
-# Vérifier si l'IP existe dans les règles iptables
-if ! iptables -S | grep -q "$IP_TO_REMOVE"; then
-    echo "L'adresse IP $IP_TO_REMOVE n'est pas dans les règles iptables"
-fi
-
-# Vérifier la structure du JSON et supprimer la règle
+# Vérifier si l'IP existe dans le fichier JSON
+IP_EXISTS_IN_FILE=0
 if command -v jq >/dev/null 2>&1; then
     # Vérifier si le fichier est un JSON valide
     if ! jq empty "$PROFILE_FILE" 2>/dev/null; then
@@ -68,18 +70,42 @@ if command -v jq >/dev/null 2>&1; then
     fi
     
     # Vérifier si l'IP est dans le fichier JSON
-    if ! jq -e --arg ip "$IP_TO_REMOVE" '.rules.global[] | select(.ipList != null and .ipList[] == $ip)' "$PROFILE_FILE" >/dev/null 2>&1; then
+    if jq -e --arg ip "$IP_TO_REMOVE" '.rules.global[] | select(.ipList != null and (.ipList | index($ip) >= 0))' "$PROFILE_FILE" >/dev/null 2>&1; then
+        echo "L'adresse IP $IP_TO_REMOVE est dans la whitelist du fichier de configuration"
+        IP_EXISTS_IN_FILE=1
+    else
         echo "L'adresse IP $IP_TO_REMOVE n'est pas dans la whitelist du fichier de configuration"
     fi
     
+    # Si l'IP n'est pas dans le fichier, vérifier dans les règles iptables
+    if [ "$IP_EXISTS_IN_FILE" -eq 0 ]; then
+        if iptables -S | grep -q "$IP_TO_REMOVE"; then
+            echo "L'adresse IP $IP_TO_REMOVE est présente dans les règles iptables mais pas dans le fichier de configuration"
+            echo "Nous allons supprimer les règles iptables mais ne pas toucher au fichier de configuration"
+            
+            # Supprimer les règles iptables existantes pour cette IP
+            echo "Suppression des règles iptables pour $IP_TO_REMOVE"
+            iptables -t filter -D FORWARD_FIREWALL -s "$IP_TO_REMOVE" -j RETURN 2>/dev/null
+            iptables -t filter -D INPUT_FIREWALL -s "$IP_TO_REMOVE" -j RETURN 2>/dev/null
+            
+            echo "Adresse IP $IP_TO_REMOVE supprimée des règles iptables avec succès"
+            exit 0
+        else
+            echo "L'adresse IP $IP_TO_REMOVE n'est ni dans le fichier de configuration ni dans les règles iptables"
+            echo "Aucune action nécessaire"
+            exit 0
+        fi
+    fi
+    
+    # Si on arrive ici, c'est que l'IP est dans le fichier et qu'on doit la supprimer
     # Créer un fichier temporaire
     TMP_FILE=$(mktemp)
     
     # Supprimer la règle contenant l'IP
     jq --arg ip "$IP_TO_REMOVE" '
-    .rules.global = .rules.global | map(
-        select(.ipList == null or .ipList[] != $ip)
-    )
+    .rules.global = (.rules.global | map(
+        select(.ipList == null or (.ipList | index($ip) | not))
+    ))
     ' "$PROFILE_FILE" > "$TMP_FILE"
     
     # Vérifier que le fichier temporaire est valide et non vide
@@ -122,7 +148,7 @@ else
     echo "Vérification réussie: l'IP n'est plus présente dans les règles iptables"
 fi
 
-if jq -e --arg ip "$IP_TO_REMOVE" '.rules.global[] | select(.ipList != null and .ipList[] == $ip)' "$PROFILE_FILE" >/dev/null 2>&1; then
+if jq -e --arg ip "$IP_TO_REMOVE" '.rules.global[] | select(.ipList != null and (.ipList | index($ip) >= 0))' "$PROFILE_FILE" >/dev/null 2>&1; then
     echo "ATTENTION: L'IP est toujours présente dans le fichier de configuration"
 else
     echo "Vérification réussie: l'IP a bien été supprimée du fichier de configuration"
