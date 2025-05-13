@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Ce script affiche les règles du firewall avec leur nom, leurs adresses IP et leur statut
-# Usage: ./list_firewall_rules.sh
-
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
 SETTINGS_FILE="$FIREWALL_DIR/firewall_settings.json"
 
@@ -25,21 +22,21 @@ else
 fi
 
 echo "Fichier de profil: $PROFILE_FILE"
-echo "----------------------------------------------------------------------------------"
-echo "| Rule Name                        | IP Address(es)                   | Enabled |"
-echo "----------------------------------------------------------------------------------"
+echo "---------------------------------------------------------------------------------------------"
+printf "| %-34s | %-38s | %-7s |\n" "Rule Name" "IP Address(es)" "Enabled"
+echo "---------------------------------------------------------------------------------------------"
 
 if command -v jq >/dev/null 2>&1; then
     jq -r '
-    .rules.global[]
-    | select(.ipList | type == "array" and length > 0)
-    | [(if (.name | tostring | length) > 0 then .name else "-" end), (.ipList | join(", ")), (.enable // false)]
-    | @tsv
+      .rules.global[]
+      | select(.ipList | type == "array" and length > 0)
+      | [(if (.name | tostring | length) > 0 then .name else "-" end), (.ipList | join(", ")), (.enable // false)]
+      | @tsv
     ' "$PROFILE_FILE" | while IFS=$'\t' read -r name iplist enabled; do
-        printf "| %-32s | %-30s | %-7s |\n" "$name" "$iplist" "$enabled"
+        printf "| %-34s | %-38s | %-7s |\n" "$name" "$iplist" "$enabled"
     done
 else
-    echo "jq is not available; cannot display firewall rules"
+    echo "jq n'est pas disponible, impossible d'afficher les règles"
 fi
 
-echo "----------------------------------------------------------------------------------"
+echo "---------------------------------------------------------------------------------------------"
