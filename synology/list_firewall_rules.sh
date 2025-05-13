@@ -31,10 +31,10 @@ echo "--------------------------------------------------------------------------
 
 if command -v jq >/dev/null 2>&1; then
     jq -r '
-        .rules.global[]
-        | select(.ipList | type == "array" and length > 0)
-        | [(.name // "-"), (.ipList | join(", ")), (.enable // false)]
-        | @tsv
+    .rules.global[]
+    | select(.ipList | type == "array" and length > 0)
+    | [(if (.name | tostring | length) > 0 then .name else "-" end), (.ipList | join(", ")), (.enable // false)]
+    | @tsv
     ' "$PROFILE_FILE" | while IFS=$'\t' read -r name iplist enabled; do
         printf "| %-32s | %-30s | %-7s |\n" "$name" "$iplist" "$enabled"
     done
