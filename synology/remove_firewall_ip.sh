@@ -1,17 +1,18 @@
 #!/bin/bash
 
-# Ce script supprime une règle du firewall Synology DSM 7.x en se basant sur le hostname
-# Usage: ./remove_firewall_hostname.sh <hostname>
+# Ce script supprime une règle du firewall Synology DSM 7.x en se basant sur le nom de la règle
+# Usage: ./remove_firewall_ip.sh <rule_name>
+# Le rule_name peut être un hostname ou une adresse IP (selon ce qui a été utilisé lors de l'ajout)
 
-# Vérifier si le hostname a été fourni
+# Vérifier si un nom de règle a été fourni
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <hostname>"
-    echo "Exemple: $0 maison.ddns.net"
+    echo "Usage: $0 <rule_name>"
+    echo "Exemple: $0 maison.ddns.net  OU  $0 192.168.1.100"
     exit 1
 fi
 
-# Hostname à supprimer
-HOSTNAME="$1"
+# Nom de la règle à supprimer (peut être un hostname ou une adresse IP)
+RULE_NAME="$1"
 
 # Chemin vers les fichiers de configuration du firewall
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
@@ -54,24 +55,43 @@ BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
 echo "Sauvegarde créée: $BACKUP_FILE"
 
-# Vérifier si le hostname existe dans le fichier
-if ! grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
-    echo "Aucune règle avec le hostname $HOSTNAME n'a été trouvée"
+# Vérifier si le nom de règle existe dans le fichier
+if ! grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
+    echo "Aucune règle avec le nom $RULE_NAME n'a été trouvée"
+    
+    # Vérifier si le RULE_NAME est une adresse IP qui pourrait être présente dans les règles iptables
+    if [[ $RULE_NAME =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        if iptables -S | grep -q "$RULE_NAME"; then
+            echo "L'adresse IP $RULE_NAME est présente dans les règles iptables, mais pas dans le fichier de configuration"
+            echo "Suppression des règles iptables uniquement..."
+            iptables -t filter -D FORWARD_FIREWALL -s "$RULE_NAME" -j RETURN 2>/dev/null
+            iptables -t filter -D INPUT_FIREWALL -s "$RULE_NAME" -j RETURN 2>/dev/null
+            echo "Règles iptables supprimées."
+            exit 0
+        fi
+    fi
+    
+    echo "Aucune action nécessaire."
     exit 0
 fi
 
-# Extraire l'adresse IP associée au hostname pour la supprimer des règles iptables
+# Extraire l'adresse IP associée au nom de règle pour la supprimer des règles iptables
 IP_ADDRESS=""
 if command -v jq >/dev/null 2>&1; then
-    IP_ADDRESS=$(jq -r --arg hostname "$HOSTNAME" '.rules.global[] | select(.name == $hostname) | .ipList[0]' "$PROFILE_FILE")
-    echo "Adresse IP associée au hostname $HOSTNAME: $IP_ADDRESS"
+    IP_ADDRESS=$(jq -r --arg name "$RULE_NAME" '.rules.global[] | select(.name == $name) | .ipList[0]' "$PROFILE_FILE")
     
-    # Supprimer la règle contenant le hostname
+    if [ -n "$IP_ADDRESS" ]; then
+        echo "Adresse IP associée au nom de règle $RULE_NAME: $IP_ADDRESS"
+    else
+        echo "Impossible de déterminer l'adresse IP associée au nom de règle $RULE_NAME"
+    fi
+    
+    # Supprimer la règle contenant le nom spécifié
     TMP_FILE=$(mktemp)
     
-    jq --arg hostname "$HOSTNAME" '
+    jq --arg name "$RULE_NAME" '
     .rules.global = (.rules.global | map(
-        select(.name != $hostname)
+        select(.name != $name)
     ))
     ' "$PROFILE_FILE" > "$TMP_FILE"
     
@@ -108,13 +128,13 @@ if ! /usr/syno/bin/synofirewall --reload; then
     exit 1
 fi
 
-echo "Règle pour le hostname $HOSTNAME supprimée avec succès"
+echo "Règle pour $RULE_NAME supprimée avec succès"
 
-# Vérifier que le hostname a bien été supprimé
-if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
-    echo "ATTENTION: Le hostname est toujours présent dans le fichier de configuration"
+# Vérifier que le nom de règle a bien été supprimé
+if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$RULE_NAME\"" "$PROFILE_FILE"; then
+    echo "ATTENTION: Le nom de règle est toujours présent dans le fichier de configuration"
 else
-    echo "Vérification réussie: le hostname a bien été supprimé du fichier de configuration"
+    echo "Vérification réussie: le nom de règle a bien été supprimé du fichier de configuration"
 fi
 
 # Vérifier que l'IP a bien été supprimée des règles iptables, si elle était connue
