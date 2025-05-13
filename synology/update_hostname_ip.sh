@@ -10,6 +10,11 @@ HOSTNAME=${1:-$DEFAULT_HOSTNAME}  # Utilise le paramètre s'il est fourni, sinon
 IP_HISTORY_FILE="/tmp/home_ip_history.txt"
 SCRIPT_DIR="$(dirname "$0")"
 
+# Ajouter un timestamp au début de l'exécution
+echo "======================================================"
+echo "Exécution du $(date +'%Y-%m-%d %H:%M:%S')"
+echo "======================================================"
+
 # Vérifier si le script d'ajout et de suppression sont présents
 if [ ! -f "$SCRIPT_DIR/add_firewall_ip.sh" ] || [ ! -f "$SCRIPT_DIR/remove_firewall_ip.sh" ]; then
     echo "Erreur: Les scripts add_firewall_ip.sh et remove_firewall_ip.sh doivent être dans le même répertoire"
