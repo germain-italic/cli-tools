@@ -25,21 +25,21 @@ else
 fi
 
 echo "Fichier de profil: $PROFILE_FILE"
-echo "-----------------------------------------------------------------------"
-echo "| Nom de la règle               | Adresse(s) IP                    | Activée |"
-echo "-----------------------------------------------------------------------"
+echo "----------------------------------------------------------------------------------"
+echo "| Rule Name                        | IP Address(es)                   | Enabled |"
+echo "----------------------------------------------------------------------------------"
 
 if command -v jq >/dev/null 2>&1; then
     jq -r '
         .rules.global[]
         | select(.ipList | type == "array" and length > 0)
-        | [.name, (.ipList | join(", ")), .enable]
+        | [(.name // "-"), (.ipList | join(", ")), (.enable // false)]
         | @tsv
     ' "$PROFILE_FILE" | while IFS=$'\t' read -r name iplist enabled; do
-        printf "| %-28s | %-30s | %-7s |\n" "$name" "$iplist" "$enabled"
+        printf "| %-32s | %-30s | %-7s |\n" "$name" "$iplist" "$enabled"
     done
 else
-    echo "jq n'est pas disponible, impossible d'afficher les règles"
+    echo "jq is not available; cannot display firewall rules"
 fi
 
-echo "-----------------------------------------------------------------------"
+echo "----------------------------------------------------------------------------------"
