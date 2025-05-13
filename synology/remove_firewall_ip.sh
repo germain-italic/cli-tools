@@ -1,23 +1,17 @@
 #!/bin/bash
 
-# Ce script supprime une IP de la whitelist du firewall Synology DSM 7.x
-# Usage: ./remove_firewall_ip.sh <adresse_ip>
+# Ce script supprime une règle du firewall Synology DSM 7.x en se basant sur le hostname
+# Usage: ./remove_firewall_hostname.sh <hostname>
 
-# Vérifier si une adresse IP a été fournie
+# Vérifier si le hostname a été fourni
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <adresse_ip>"
-    echo "Exemple: $0 192.168.1.100"
+    echo "Usage: $0 <hostname>"
+    echo "Exemple: $0 maison.ddns.net"
     exit 1
 fi
 
-# Adresse IP à supprimer
-IP_TO_REMOVE="$1"
-
-# Vérifier le format de l'IP (validation basique)
-if ! [[ $IP_TO_REMOVE =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-    echo "Erreur: Format d'adresse IP invalide"
-    exit 1
-fi
+# Hostname à supprimer
+HOSTNAME="$1"
 
 # Chemin vers les fichiers de configuration du firewall
 FIREWALL_DIR="/usr/syno/etc/firewall.d"
@@ -60,51 +54,24 @@ BACKUP_FILE="${PROFILE_FILE}.backup.$(date +%Y%m%d%H%M%S)"
 cp "$PROFILE_FILE" "$BACKUP_FILE"
 echo "Sauvegarde créée: $BACKUP_FILE"
 
-# Vérifier si l'IP existe dans le fichier JSON
-IP_EXISTS_IN_FILE=0
+# Vérifier si le hostname existe dans le fichier
+if ! grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
+    echo "Aucune règle avec le hostname $HOSTNAME n'a été trouvée"
+    exit 0
+fi
+
+# Extraire l'adresse IP associée au hostname pour la supprimer des règles iptables
+IP_ADDRESS=""
 if command -v jq >/dev/null 2>&1; then
-    # Vérifier si le fichier est un JSON valide
-    if ! jq empty "$PROFILE_FILE" 2>/dev/null; then
-        echo "Erreur: Le fichier de profil n'est pas un JSON valide"
-        exit 1
-    fi
+    IP_ADDRESS=$(jq -r --arg hostname "$HOSTNAME" '.rules.global[] | select(.name == $hostname) | .ipList[0]' "$PROFILE_FILE")
+    echo "Adresse IP associée au hostname $HOSTNAME: $IP_ADDRESS"
     
-    # Vérifier si l'IP est dans le fichier JSON
-    if jq -e --arg ip "$IP_TO_REMOVE" '.rules.global[] | select(.ipList != null and (.ipList | index($ip) >= 0))' "$PROFILE_FILE" >/dev/null 2>&1; then
-        echo "L'adresse IP $IP_TO_REMOVE est dans la whitelist du fichier de configuration"
-        IP_EXISTS_IN_FILE=1
-    else
-        echo "L'adresse IP $IP_TO_REMOVE n'est pas dans la whitelist du fichier de configuration"
-    fi
-    
-    # Si l'IP n'est pas dans le fichier, vérifier dans les règles iptables
-    if [ "$IP_EXISTS_IN_FILE" -eq 0 ]; then
-        if iptables -S | grep -q "$IP_TO_REMOVE"; then
-            echo "L'adresse IP $IP_TO_REMOVE est présente dans les règles iptables mais pas dans le fichier de configuration"
-            echo "Nous allons supprimer les règles iptables mais ne pas toucher au fichier de configuration"
-            
-            # Supprimer les règles iptables existantes pour cette IP
-            echo "Suppression des règles iptables pour $IP_TO_REMOVE"
-            iptables -t filter -D FORWARD_FIREWALL -s "$IP_TO_REMOVE" -j RETURN 2>/dev/null
-            iptables -t filter -D INPUT_FIREWALL -s "$IP_TO_REMOVE" -j RETURN 2>/dev/null
-            
-            echo "Adresse IP $IP_TO_REMOVE supprimée des règles iptables avec succès"
-            exit 0
-        else
-            echo "L'adresse IP $IP_TO_REMOVE n'est ni dans le fichier de configuration ni dans les règles iptables"
-            echo "Aucune action nécessaire"
-            exit 0
-        fi
-    fi
-    
-    # Si on arrive ici, c'est que l'IP est dans le fichier et qu'on doit la supprimer
-    # Créer un fichier temporaire
+    # Supprimer la règle contenant le hostname
     TMP_FILE=$(mktemp)
     
-    # Supprimer la règle contenant l'IP
-    jq --arg ip "$IP_TO_REMOVE" '
+    jq --arg hostname "$HOSTNAME" '
     .rules.global = (.rules.global | map(
-        select(.ipList == null or (.ipList | index($ip) | not))
+        select(.name != $hostname)
     ))
     ' "$PROFILE_FILE" > "$TMP_FILE"
     
@@ -123,12 +90,14 @@ else
     exit 1
 fi
 
-# Supprimer les règles iptables existantes pour cette IP
-echo "Suppression des règles iptables pour $IP_TO_REMOVE"
-iptables -t filter -D FORWARD_FIREWALL -s "$IP_TO_REMOVE" -j RETURN 2>/dev/null
-iptables -t filter -D INPUT_FIREWALL -s "$IP_TO_REMOVE" -j RETURN 2>/dev/null
+# Si une adresse IP a été trouvée, la supprimer des règles iptables
+if [ -n "$IP_ADDRESS" ]; then
+    echo "Suppression des règles iptables pour $IP_ADDRESS"
+    iptables -t filter -D FORWARD_FIREWALL -s "$IP_ADDRESS" -j RETURN 2>/dev/null
+    iptables -t filter -D INPUT_FIREWALL -s "$IP_ADDRESS" -j RETURN 2>/dev/null
+fi
 
-# Recharger le firewall de manière plus sûre
+# Recharger le firewall
 echo "Rechargement du firewall..."
 if ! /usr/syno/bin/synofirewall --reload; then
     echo "Erreur lors du rechargement du firewall!"
@@ -139,17 +108,18 @@ if ! /usr/syno/bin/synofirewall --reload; then
     exit 1
 fi
 
-echo "Adresse IP $IP_TO_REMOVE supprimée de la whitelist avec succès"
+echo "Règle pour le hostname $HOSTNAME supprimée avec succès"
 
-# Vérifier que l'IP a bien été supprimée
-if iptables -S | grep -q "$IP_TO_REMOVE"; then
-    echo "ATTENTION: L'IP est toujours présente dans les règles iptables"
+# Vérifier que le hostname a bien été supprimé
+if grep -q "\"name\"[[:space:]]*:[[:space:]]*\"$HOSTNAME\"" "$PROFILE_FILE"; then
+    echo "ATTENTION: Le hostname est toujours présent dans le fichier de configuration"
 else
-    echo "Vérification réussie: l'IP n'est plus présente dans les règles iptables"
+    echo "Vérification réussie: le hostname a bien été supprimé du fichier de configuration"
 fi
 
-if jq -e --arg ip "$IP_TO_REMOVE" '.rules.global[] | select(.ipList != null and (.ipList | index($ip) >= 0))' "$PROFILE_FILE" >/dev/null 2>&1; then
-    echo "ATTENTION: L'IP est toujours présente dans le fichier de configuration"
+# Vérifier que l'IP a bien été supprimée des règles iptables, si elle était connue
+if [ -n "$IP_ADDRESS" ] && iptables -S | grep -q "$IP_ADDRESS"; then
+    echo "ATTENTION: L'IP est toujours présente dans les règles iptables"
 else
-    echo "Vérification réussie: l'IP a bien été supprimée du fichier de configuration"
+    echo "Vérification réussie: les règles iptables ont été correctement mises à jour"
 fi
