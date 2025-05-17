@@ -20,7 +20,7 @@ cd synology/firewall || {
   exit 1
 }
 
-git pull origin msater || {
+git pull origin master || {
   echo "❌ Failed to pull latest changes."
   exit 1
 }
