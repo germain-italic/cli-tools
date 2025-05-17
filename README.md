@@ -47,3 +47,37 @@ cd ~/cli-tools && git pull && source ~/.bashrc
 # Todo
 
 - [ ] Use [Gum](https://github.com/charmbracelet/gum)
+
+# Synology Firewall CLI Tools
+
+The `synology/firewall` directory is a **Git submodule** containing a collection of CLI scripts to manage firewalls on Synology NAS systems.
+
+## Installation
+
+After cloning `cli-tools`, you need to initialize the submodule:
+
+```bash
+./synology/firewall-install.sh
+```
+
+This will:
+
+- Initialize the `synology/firewall` submodule
+- Install a Git hook to auto-update the submodule after each `git pull`
+
+## Update
+
+To manually update the firewall tools:
+
+```bash
+./synology/firewall-update.sh
+```
+
+To remove the firewall tools completely:
+
+```bash
+./synology/firewall-remove.sh
+```
+
+> The `firewall` scripts are maintained in a separate repository:  
+> https://github.com/germain-italic/synology-nas-cli-firewall-manager
