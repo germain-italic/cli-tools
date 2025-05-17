@@ -81,3 +81,20 @@ To remove the firewall tools completely:
 
 > The `firewall` scripts are maintained in a separate repository:  
 > https://github.com/germain-italic/synology-nas-cli-firewall-manager
+
+## FAQ: Do I need to commit submodule updates?
+
+If you are **just using** the `cli-tools` project:
+
+- ✅ No, you do not need to commit anything.
+- Running `./synology/firewall-update.sh` will update the scripts locally for your own use.
+
+If you are a **contributor pushing changes**:
+
+- ✅ Yes, you must commit the updated submodule reference:
+  ```bash
+  git commit -m "Update firewall submodule"
+  git push
+  ```
+
+This ensures that everyone using the main repository sees the correct version of the `synology/firewall` scripts.
