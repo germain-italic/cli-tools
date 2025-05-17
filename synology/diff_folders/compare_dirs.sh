@@ -27,12 +27,13 @@
 # ============================================================================
 
 # Chemins des répertoires à comparer (Modifiez ces variables selon vos besoins)
-LOCAL_DIR="/media/sf_mp4/"
+LOCAL_DIR="/mnt/d/mp4/"
 REMOTE_HOST="root@nas2"
 REMOTE_DIR="/volume1/Emby/"
 
 # Obtenir le chemin du répertoire où se trouve le script
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SCRIPT_DIR="/mnt/d/Sites/cli-tools/synology/diff_folders"
 
 # Définir le chemin de sortie de l'Excel dans le même répertoire que le script
 # Vous pouvez remplacer cette ligne si vous souhaitez spécifier un autre emplacement
@@ -63,7 +64,7 @@ if ! check_file_access "${OUTPUT_XLSX}"; then
 fi
 
 # Fichiers à exclure lors de la comparaison (les fichiers générés par le script lui-même)
-SCRIPT_FILES="directory_differences.xlsx|directory_differences.csv|directory_differences_extensions.csv|directory_differences_missing_on_nas.csv|directory_differences_summary.csv"
+SCRIPT_FILES="directory_differences.xlsx|directory_differences.csv|directory_differences_extensions.csv|directory_differences_missing_on_nas.csv|directory_differences_summary.csv|^Scripts/.*"
 
 # Extensions à exclure (séparées par des |)
 # Fichiers sur le NAS mais pas en local à ignorer (générés par Emby)
