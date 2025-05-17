@@ -1,0 +1,3 @@
+[submodule "synology/firewall"]
+	path = synology/firewall
+	url = https://github.com/germain-italic/synology-nas-cli-firewall-manager.git
